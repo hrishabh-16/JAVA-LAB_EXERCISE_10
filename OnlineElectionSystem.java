@@ -1,151 +1,223 @@
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 
-class VoteTask implements Runnable {
-    private String voterName;
-    private String candidateName;
-    private ElectionResultRepository resultRepository;
 
-    public VoteTask(String voterName, String candidateName, ElectionResultRepository resultRepository) {
-        this.voterName = voterName;
-        this.candidateName = candidateName;
-        this.resultRepository = resultRepository;
+
+
+class ElectionParticipant {
+    String name;
+    String contact;
+    int age;
+    boolean isVoter;
+    boolean isCandidate;
+
+    public ElectionParticipant(String name, String contact, int age, boolean isVoter, boolean isCandidate) {
+        this.name = name;
+        this.contact = contact;
+        this.age = age;
+        this.isVoter = isVoter;
+        this.isCandidate = isCandidate;
     }
 
     @Override
-    public void run() {
-        // Simulate voting process
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        System.out.println("Processing vote for voter: " + voterName);
-
-        // Record vote in the result repository
-        resultRepository.recordVote(candidateName);
-        System.out.println("\nVote cast by " + voterName + " for candidate: " + candidateName + "\n");
+    public String toString() {
+        return "Name: " + name + ", Contact: " + contact + ", Age: " + age +
+                ", Voter: " + (isVoter ? "Yes" : "No") + ", Candidate: " + (isCandidate ? "Yes" : "No");
     }
 }
 
-class ElectionResultRepository {
-    private Map<String, Integer> voteCounts;
+public class OnlineElectionSystem extends JFrame {
+    private List<ElectionParticipant> participants;
+    private JTextArea participantListArea;
+    private JTextField nameField;
+    private JTextField contactField;
+    private JSpinner ageSpinner;
+    private JCheckBox voterCheckBox;
+    private JCheckBox candidateCheckBox;
 
-    public ElectionResultRepository() {
-        this.voteCounts = new HashMap<>();
+    public OnlineElectionSystem() {
+        participants = new ArrayList<>();
+
+        setTitle("Online Election System");
+        setSize(500, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        createUI();
+
+        setVisible(true);
     }
 
-    public void recordVote(String candidateName) {
-        voteCounts.put(candidateName, voteCounts.getOrDefault(candidateName, 0) + 1);
-    }
+    private void createUI() {
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BorderLayout());
 
-    public Map<String, Integer> getVoteCounts() {
-        return new HashMap<>(voteCounts);
-    }
-}
+        participantListArea = new JTextArea();
+        participantListArea.setEditable(false);
 
-class ElectionReport {
-    private ElectionResultRepository resultRepository;
+        JScrollPane scrollPane = new JScrollPane(participantListArea);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-    public ElectionReport(ElectionResultRepository resultRepository) {
-        this.resultRepository = resultRepository;
-    }
+        JPanel inputPanel = new JPanel(new GridLayout(6, 2));
 
-    public void generateReport() {
-        Map<String, Integer> voteCounts = resultRepository.getVoteCounts();
+        inputPanel.add(new JLabel("Participant Name:"));
+        nameField = new JTextField();
+        inputPanel.add(nameField);
 
-        System.out.println("\nElection Results:");
-        System.out.println("-----------------");
+        inputPanel.add(new JLabel("Participant Contact:"));
+        contactField = new JTextField();
+        inputPanel.add(contactField);
 
-        for (Map.Entry<String, Integer> entry : voteCounts.entrySet()) {
-            System.out.println("Candidate: " + entry.getKey() + ", Votes: " + entry.getValue());
-        }
+        inputPanel.add(new JLabel("Participant Age:"));
+        SpinnerModel ageModel = new SpinnerNumberModel(18, 18, 100, 1);
+        ageSpinner = new JSpinner(ageModel);
+        JSpinner.NumberEditor ageEditor = new JSpinner.NumberEditor(ageSpinner);
+        ageSpinner.setEditor(ageEditor);
+        inputPanel.add(ageSpinner);
 
-        String winner = findWinner(voteCounts);
-        System.out.println("\nWinner: " + winner);
-    }
+        inputPanel.add(new JLabel("Register as Voter:"));
+        voterCheckBox = new JCheckBox();
+        inputPanel.add(voterCheckBox);
 
-    private String findWinner(Map<String, Integer> voteCounts) {
-        String winner = null;
-        int maxVotes = 0;
+        inputPanel.add(new JLabel("Register as Candidate:"));
+        candidateCheckBox = new JCheckBox();
+        inputPanel.add(candidateCheckBox);
 
-        for (Map.Entry<String, Integer> entry : voteCounts.entrySet()) {
-            if (entry.getValue() > maxVotes) {
-                maxVotes = entry.getValue();
-                winner = entry.getKey();
+        JButton registerButton = new JButton("Register");
+        registerButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                registerParticipant();
             }
+        });
+
+        inputPanel.add(new JLabel());
+        inputPanel.add(registerButton);
+
+        mainPanel.add(inputPanel, BorderLayout.NORTH);
+
+        JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu("File");
+
+        JMenuItem viewParticipantsItem = new JMenuItem("View Participants");
+        viewParticipantsItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                viewParticipants();
+            }
+        });
+
+        JMenuItem clearParticipantsItem = new JMenuItem("Clear Participants");
+        clearParticipantsItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                clearParticipants();
+            }
+        });
+
+        JMenuItem exitItem = new JMenuItem("Exit");
+        exitItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.exit(0);
+            }
+        });
+
+        fileMenu.add(viewParticipantsItem);
+        fileMenu.addSeparator();
+        fileMenu.add(clearParticipantsItem);
+        fileMenu.addSeparator();
+        fileMenu.add(exitItem);
+
+        menuBar.add(fileMenu);
+
+        setJMenuBar(menuBar);
+
+        add(mainPanel);
+    }
+
+    private void registerParticipant() {
+        String name = nameField.getText();
+        String contact = contactField.getText();
+        int age = (int) ageSpinner.getValue();
+        boolean isVoter = voterCheckBox.isSelected();
+        boolean isCandidate = candidateCheckBox.isSelected();
+
+        if (validateName(name) && validateContact(contact)) {
+            ElectionParticipant participant = new ElectionParticipant(name,contact, age, isVoter,isCandidate);
+           participants.add(participant);
+
+           ElectionDbOperations.addClient(participant);
+            
+            updateParticipantList();
+
+            nameField.setText("");
+            contactField.setText("");
+            ageSpinner.setValue(18);
+            voterCheckBox.setSelected(false);
+            candidateCheckBox.setSelected(false);
+
+            JOptionPane.showMessageDialog(this, "Participant registered successfully.", "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
         }
 
-        return winner;
+        
     }
-}
 
-public class OnlineElectionSystem {
+    private boolean validateName(String name) {
+        if (name.isEmpty() || !name.matches("[a-zA-Z]+")) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid name with only alphabetic characters.",
+                    "Invalid Name", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    private boolean validateContact(String contact) {
+        if (contact.isEmpty() || !contact.matches("\\d+")) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid contact with only numeric characters.",
+                    "Invalid Contact", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    private void viewParticipants() {
+        StringBuilder participantList = new StringBuilder("Participant List:\n");
+        for (ElectionParticipant participant : participants) {
+            participantList.append(participant.toString()).append("\n");
+        }
+
+        JOptionPane.showMessageDialog(this, participantList.toString(), "View Participants",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void clearParticipants() {
+        int response = JOptionPane.showConfirmDialog(this, "Are you sure you want to clear the participant list?",
+                "Clear Participants", JOptionPane.YES_NO_OPTION);
+        if (response == JOptionPane.YES_OPTION) {
+            participants.clear();
+            updateParticipantList();
+        }
+    }
+
+    private void updateParticipantList() {
+        participantListArea.setText("");
+        for (ElectionParticipant participant : participants) {
+            participantListArea.append(participant.toString() + "\n");
+        }
+    }
+
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-
-        System.out.print("Enter the number of initial voters: ");
-        int numberOfVoters = scanner.nextInt();
-        scanner.nextLine();
-        // Create a thread pool with a fixed number of threads
-        int numberOfThreads = 5;
-        ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
-
-        ElectionResultRepository resultRepository = new ElectionResultRepository();
-
-        // Simulate multiple voters casting votes for different candidates
-        for (int i = 1; i <= numberOfVoters; i++) {
-            System.out.print("Enter the name of Voter " + i + ": ");
-            String voterName = scanner.nextLine();
-
-            // Randomly select a candidate for each vote
-            System.out.print("Enter the name of the candidate for " + voterName + ": ");
-            String candidateName = scanner.nextLine();
-
-            // Submit each vote as a task to the thread pool
-            executorService.submit(new VoteTask(voterName, candidateName, resultRepository));
-        }
-
-        executorService.shutdown();
-        System.out.println("\nVoting process completed.\n");
-
-        ElectionReport electionReport = new ElectionReport(resultRepository);
-        electionReport.generateReport();
-
-        // Allow users to manually add votes
-        addVotesManually(scanner, resultRepository);
-
-        scanner.close();
-    }
-
-    private static void addVotesManually(Scanner scanner, ElectionResultRepository resultRepository) {
-        System.out.println("\nManually Add Votes:");
-
-        while (true) {
-            System.out.print("Do you want to manually add a vote? (yes/no): ");
-            String choice = scanner.nextLine();
-
-            if ("yes".equalsIgnoreCase(choice)) {
-                System.out.print("Enter the name of the voter: ");
-                String voterName = scanner.nextLine();
-
-                System.out.print("Enter the name of the candidate: ");
-                String candidateName = scanner.nextLine();
-
-                // Record the manually added vote in the result repository
-                resultRepository.recordVote(candidateName);
-                System.out.println("Vote added by " + voterName + " for candidate: " + candidateName);
-            } else if ("no".equalsIgnoreCase(choice)) {
-                break;
-            } else {
-                System.out.println("Invalid choice. Please enter 'yes' or 'no'.");
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                new OnlineElectionSystem();
             }
-        }
-
-        // Display updated report after manual votes
-        ElectionReport updatedReport = new ElectionReport(resultRepository);
-        updatedReport.generateReport();
+        });
     }
 }
